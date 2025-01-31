@@ -26,7 +26,7 @@ To use **Ollama** models (like `deepseek-r1:1.5b`), you'll need to have **Ollama
 ### 2. Install Required Python Libraries
 Clone this repository and install the required dependencies using `pip`. Run the following commands in your terminal:
 
-### 3. 
+### 3. Run Streamlit
 ```sh 
 streamlit run deepseek-r1.py
 ```
@@ -44,7 +44,6 @@ This README will provide a user-friendly guide to installing and using the DeepS
 
 ```bash
 git clone https://github.com/Tirru-2002/Deepseek-r1-Langchain.git
-cd deepseek-code-companion
 pip install -r requirements.txt
 ```
 
