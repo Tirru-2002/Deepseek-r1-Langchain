@@ -24,7 +24,11 @@ To use **Ollama** models (like `deepseek-r1:1.5b`), you'll need to have **Ollama
 - Once installed, ensure that Ollama is running locally on your machine. You should be able to access it via the default URL `http://localhost:11434`.
 
 ### 2. Install Required Python Libraries
-Clone this repository and install the required dependencies using `pip`. Run the following commands in your terminal:
+Clone this repository and install the required dependencies using 
+```sh
+pip install -r requirements.txt
+```
+. Run the following commands in your terminal:
 
 ### 3. Run Streamlit
 ```sh 
@@ -44,6 +48,5 @@ This README will provide a user-friendly guide to installing and using the DeepS
 
 ```bash
 git clone https://github.com/Tirru-2002/Deepseek-r1-Langchain.git
-pip install -r requirements.txt
 ```
 
