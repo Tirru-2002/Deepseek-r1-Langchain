@@ -1,14 +1,12 @@
 import streamlit as st
 from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import (
-    SystemMessagePromptTemplate,
-    HumanMessagePromptTemplate,
-    AIMessagePromptTemplate,
-    ChatPromptTemplate
-)
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+import base64
 import re
-# Custom CSS styling for <think> and actual output
+
+# Custom CSS styling for the application
 st.markdown("""
 <style>
     .main {
@@ -26,8 +24,8 @@ st.markdown("""
         font-style: italic; /* Italic style for emphasis */
     }
     .actual-output {
-        # color: #00ff00; /* Green color for actual output */
-        # font-weight: bold; /* Bold style for emphasis */
+        color: #00ff00; /* Green color for actual output */
+        font-weight: bold; /* Bold style for emphasis */
     }
     .stSelectbox div[data-baseweb="select"] {
         color: white !important;
@@ -44,19 +42,31 @@ st.markdown("""
         background-color: #2d2d2d !important;
         color: white !important;
     }
+    .user-image {
+        max-width: 300px;
+        margin-top: 10px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🧠 DeepSeek Code Companion")
-st.caption("🚀 Your AI Pair Programmer with Debugging Superpowers")
+# Application title and caption
+st.title("🧠 AI Code Companion")
+st.caption("🚀 Your Multimodal AI Pair Programmer with Vision & Debugging Superpowers")
 
-# Sidebar configuration
+# Sidebar configuration for model selection and settings
 with st.sidebar:
     st.header("⚙️ Configuration")
     selected_model = st.selectbox(
         "Choose Model",
-        ["deepseek-r1:1.5b", "deepseek-r1:3b"],
+        ["gemma3:4b", "deepscaler:latest"], #Add models Here, which you have downloaded from ollama.
         index=0
+    )
+    temperature = st.slider(
+        "Temperature",
+        min_value=0.0,
+        max_value=1.0,
+        value=0.6,
+        step=0.1
     )
     st.divider()
     st.markdown("### Model Capabilities")
@@ -65,99 +75,117 @@ with st.sidebar:
     - 🐞 Debugging Assistant
     - 📝 Code Documentation
     - 💡 Solution Design
+    - 👁️ Image Analysis
     """)
     st.divider()
     st.markdown("Built with [Ollama](https://ollama.ai/) | [LangChain](https://python.langchain.com/)")
 
-# Initiate the chat engine
+# Initialize the chat engine with streaming enabled
 llm_engine = ChatOllama(
     model=selected_model,
     base_url="http://localhost:11434",
-    temperature=0.6
+    temperature=temperature,
+    stream=True  # Enable streaming for token-by-token response
 )
 
-# System prompt configuration
-system_prompt = SystemMessagePromptTemplate.from_template(
-    "You are an expert AI coding assistant. Provide concise, correct solutions "
-    "with strategic print statements for debugging. Always respond in English."
-)
+# Define the system prompt
+system_prompt = "You are an expert AI coding assistant with vision capabilities. Provide concise, correct solutions with strategic print statements for debugging. Analyze images when provided and incorporate them into your responses. Always respond in English."
 
-# Session state management
+# Manage session state for chat history
 if "message_log" not in st.session_state:
-    st.session_state.message_log = [{"role": "ai", "content": "Hi! I'm DeepSeek. How can I help you code today? 💻"}]
+    st.session_state.message_log = [{"role": "ai", "content": "Hi! I'm your Ai code Assistant. How can I help you code or analyze images today? 💻👁️"}]
 
-# Chat container
+# Create a container for the chat interface
 chat_container = st.container()
 
-# Function to format the output
-def format_output(raw_output):
-    # Check if <think> tags exist
-    if "<think>" in raw_output and "</think>" in raw_output:
-        # Extract think and actual parts
-        think_part = raw_output.split("<think>")[1].split("</think>")[0]
-        actual_part = raw_output.split("</think>")[1].strip()
-        
-        # Apply class="think-output" to ALL <p> inside <think>
-        think_part = re.sub(r'<p>(.*?)</p>', r'<p class="think-output">\1</p>', think_part, flags=re.DOTALL)
-        
-        # Return formatted output with both think and actual outputs
-        return f'''
-        <div class="think-container">
-            <span class="think-output">&lt;think&gt;{think_part}&lt;/think&gt;</span>
-        </div>
-        <div class="actual-container">
-            <span class="actual-output">{actual_part}</span>
-        </div>
-        '''
-
-    return raw_output  # Return as is if <think> tags are not found
-
-# Display chat messages
-with chat_container:
-    for message in st.session_state.message_log:
-        with st.chat_message(message["role"]):
-            if message["role"] == "ai":
-                formatted_content = format_output(message["content"])
-                st.markdown(formatted_content, unsafe_allow_html=True)
+# Function to stream and format AI output incrementally
+def stream_formatted_output(raw_stream, placeholder):
+    """Stream AI response token by token and format <think> and actual output."""
+    full_response = ""
+    for chunk in raw_stream:
+        if chunk:
+            full_response += chunk
+            think_part = ""
+            actual_part = ""
+            # Parse <think> and actual output sections
+            if "<think>" in full_response and "</think>" in full_response:
+                think_match = re.search(r'<think>(.*?)</think>', full_response, re.DOTALL)
+                if think_match:
+                    think_part = think_match.group(1)
+                    actual_part = full_response.split("</think>")[1].strip()
+            elif "<think>" in full_response:
+                think_part = full_response.split("<think>")[1]
             else:
-                st.markdown(message["content"])
+                actual_part = full_response
+            # Build HTML output with styled sections
+            html_output = ""
+            if think_part:
+                html_output += f'<div class="think-container"><span class="think-output"><think>{think_part}</think></span></div>'
+            if actual_part:
+                html_output += f'<div class="actual-container"><span class="actual-output">{actual_part}</span></div>'
+            placeholder.markdown(html_output, unsafe_allow_html=True)
+    return full_response
 
-# Chat input and processing
+# Display chat messages in the container
+with chat_container:
+    for msg in st.session_state.message_log:
+        with st.chat_message(msg["role"]):
+            if msg["role"] == "ai":
+                st.markdown(msg["content"], unsafe_allow_html=True)
+            else:
+                if isinstance(msg["content"], list):
+                    for item in msg["content"]:
+                        if item["type"] == "text":
+                            st.markdown(item["text"])
+                        elif item["type"] == "image_url":
+                            st.markdown(f'<img src="{item["image_url"]}" class="user-image" alt="Uploaded Image">', unsafe_allow_html=True)
+                else:
+                    st.markdown(msg["content"])
+
+# User input section: text query and optional image upload
 user_query = st.chat_input("Type your coding question here...")
+uploaded_file = st.file_uploader("Upload an image (optional)", type=["jpg", "png", "jpeg"], key="image_uploader")
 
-def generate_ai_response(prompt_chain):
-    processing_pipeline = prompt_chain | llm_engine | StrOutputParser()
-    return processing_pipeline.invoke({})
-
-def safe_from_template(content):
-    try:
-        return AIMessagePromptTemplate.from_template(content)
-    except ValueError as e:
-        st.error(f"Invalid AI response format: {e}")
-        return AIMessagePromptTemplate.from_template("Oops! There was an error in formatting.")
-
+# Function to build the prompt chain from message history
 def build_prompt_chain():
-    prompt_sequence = [system_prompt]
+    """Construct the prompt sequence for the AI model."""
+    prompt_sequence = [SystemMessage(content=system_prompt)]
     for msg in st.session_state.message_log:
         if msg["role"] == "user":
-            prompt_sequence.append(HumanMessagePromptTemplate.from_template(msg["content"]))
+            prompt_sequence.append(HumanMessage(content=msg["content"]))
         elif msg["role"] == "ai":
-            escaped_content = msg["content"].replace("{", "{{").replace("{", "{ {").replace("}", "}}").replace("}", "} }").replace("%", "%%").replace("%", "% %")
-            prompt_sequence.append(safe_from_template(escaped_content))
+            prompt_sequence.append(AIMessage(content=msg["content"]))
     return ChatPromptTemplate.from_messages(prompt_sequence)
 
-
+# Process user input and generate streamed AI response
 if user_query:
-    # Add user message to log
-    st.session_state.message_log.append({"role": "user", "content": user_query})
-    
-    # Generate AI response
     with st.spinner("🧠 Processing..."):
+        # Handle multimodal input (text + optional image)
+        if uploaded_file is not None:
+            file_type = uploaded_file.type
+            image_data = uploaded_file.read()
+            image_base64 = base64.b64encode(image_data).decode("utf-8")
+            content = [
+                {"type": "text", "text": user_query},
+                {"type": "image_url", "image_url": f"data:{file_type};base64,{image_base64}"}
+            ]
+        else:
+            content = user_query
+        
+        # Append user message to the chat log
+        st.session_state.message_log.append({"role": "user", "content": content})
+        
+        # Generate and stream AI response
         prompt_chain = build_prompt_chain()
-        ai_response = generate_ai_response(prompt_chain)
-    
-    # Add AI response to log
-    st.session_state.message_log.append({"role": "ai", "content": ai_response})
-    
-    # Rerun to update chat display
-    st.rerun()
+        processing_pipeline = prompt_chain | llm_engine | StrOutputParser()
+        
+        with st.chat_message("ai"):
+            response_placeholder = st.empty()  # Placeholder for streaming response
+            raw_stream = processing_pipeline.stream({})
+            ai_response = stream_formatted_output(raw_stream, response_placeholder)
+        
+        # Append the complete AI response to the chat log
+        st.session_state.message_log.append({"role": "ai", "content": ai_response})
+        
+        # Rerun the app to update the chat display
+        st.rerun()
