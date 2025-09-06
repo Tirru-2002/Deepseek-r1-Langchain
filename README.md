@@ -1,11 +1,5 @@
-# Deepseek-r1-Langchain
-Ollama deepseek-r1 LLM Model as Chatbot using langchain.
-
-
-# DeepSeek Code Companion
-
 ## Overview
-**DeepSeek Code Companion** is an AI-powered chatbot that serves as your personal coding assistant, offering expertise in various programming languages, debugging, code documentation, and solution design. It’s built using **Ollama** and **LangChain**, providing a highly interactive experience to help you code better and faster.
+**AI Code Companion** is an AI-powered chatbot that serves as your personal coding assistant, offering expertise in various programming languages, debugging, code documentation, and solution design. It’s built using **Ollama** and **LangChain**, providing a highly interactive experience to help you code better and faster.
 
 Key Features:
 - **🖥 Programming Language Expert**: Expertise in various programming languages for code suggestions, best practices, and solutions.
