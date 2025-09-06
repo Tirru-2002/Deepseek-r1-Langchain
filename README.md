@@ -63,7 +63,7 @@ curl http://localhost:8000/v1/models
 
 ### 5. Run Streamlit
 ```sh 
-streamlit run deepseek-r1.py
+streamlit run LocalLLM.py
 ```
 
 ### Key Explanations:
