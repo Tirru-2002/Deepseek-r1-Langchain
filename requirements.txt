@@ -1,3 +1,7 @@
 streamlit
 langchain
+langchain-community
 langchain-ollama
+vllm
+PyPDF2
+faiss-cpu
