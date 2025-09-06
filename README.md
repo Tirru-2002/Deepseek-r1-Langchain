@@ -84,7 +84,3 @@ This README will provide a user-friendly guide to installing and using the DeepS
 - Streamlit Issues: Upgrade Streamlit with **pip install --upgrade streamlit**.
 
 
-```bash
-git clone https://github.com/Tirru-2002/Deepseek-r1-Langchain.git
-```
-
