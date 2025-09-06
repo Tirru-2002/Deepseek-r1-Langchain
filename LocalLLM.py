@@ -224,7 +224,7 @@ if user_query:
         if has_uploads:
             # Use vLLM with gemma3:4b (assuming HF model path; adjust if needed, e.g., "google/gemma-2-2b-it")
             vllm_llm = VLLM(
-                model="gemma3:4b",  # Replace with actual HF path for 'gemma3:4b' if different
+                model="google/gemma-2-2b-it",  # Replace with actual HF path for 'gemma3:4b' if different
                 temperature=temperature,
                 max_tokens=512,
                 dtype="half",  # For memory efficiency
@@ -320,3 +320,4 @@ if user_query:
         
         # Rerun the app to update the chat display
         st.rerun()
+
